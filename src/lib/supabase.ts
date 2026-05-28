@@ -1,12 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://xqoxodcvbdlfquwodujr.supabase.co";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_AcUbrUbl88DVGe2jEWg0nA_2nT31RjT";
 
-if (!supabaseUrl || supabaseUrl.startsWith("https://seucaractere") || !supabaseAnonKey) {
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
   if (typeof window !== "undefined") {
     console.warn(
-      "Aviso: NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY não estão configurados. Conecte sua conta do Supabase no arquivo .env.local!"
+      "Aviso: NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY não estão configurados no ambiente. Usando fallbacks de produção."
     );
   }
 }
