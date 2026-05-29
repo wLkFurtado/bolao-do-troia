@@ -4,7 +4,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://xqoxodcvbdl
 const supabaseAnonKey = 
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 
-  "sb_publishable_AcUbrUbl88DVGe2jEWg0nA_2nT31RjT";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxb3hvZGN2YmRsZnF1d29kdWpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwMTEyNjEsImV4cCI6MjA4MzU4NzI2MX0.-_WHLzr3gGWgZNN8mSdZ_6yzgynxqNqXh2ajSYJwmCc";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)) {
   if (typeof window !== "undefined") {
