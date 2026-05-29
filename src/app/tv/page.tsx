@@ -30,6 +30,7 @@ export default function TvPage() {
   const [loading, setLoading] = useState(true);
   const [participants, setParticipants] = useState<ParticipantRanking[]>([]);
   const [nextJogo, setNextJogo] = useState<Jogo | null>(null);
+  const [pinCode, setPinCode] = useState("----");
   
   // Controle de Slide (0: Ranking, 1: Próximo Jogo)
   const [activeSlide, setActiveSlide] = useState(0);
@@ -86,6 +87,16 @@ export default function TvPage() {
         if (fallbackJogos && fallbackJogos.length > 0) {
           setNextJogo(fallbackJogos[0]);
         }
+      }
+
+      // 3. Obter código de presença do dia (PIN)
+      const { data: config, error: configError } = await supabase
+        .from("configuracoes")
+        .select("valor")
+        .eq("chave", "codigo_presenca")
+        .single();
+      if (!configError && config) {
+        setPinCode(config.valor);
       }
     } catch (e) {
       console.error("Erro ao sincronizar dados da TV:", e);
@@ -162,6 +173,15 @@ export default function TvPage() {
       {/* CABEÇALHO DA TV (Fixo) */}
       <header className="flex items-center justify-between border-b border-zinc-900 pb-4 z-10">
         <Logo size="md" />
+        
+        {/* Código de presença do dia (PIN) destacado para os clientes locais */}
+        <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500/10 to-primary/10 border border-primary/30 rounded-xl animate-pulse shadow-[0_0_15px_rgba(212,175,55,0.05)]">
+          <span className="text-[10px] text-zinc-400 font-display font-black tracking-widest uppercase">PIN DO DIA:</span>
+          <span className="text-lg font-display font-black text-primary tracking-widest bg-zinc-900/60 border border-zinc-800 px-3 py-0.5 rounded-lg shadow-inner">
+            {pinCode}
+          </span>
+        </div>
+
         <div className="flex items-center gap-6 text-right">
           <div className="flex flex-col">
             <span className="text-[10px] text-muted font-display uppercase tracking-widest leading-none">

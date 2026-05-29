@@ -7,7 +7,7 @@ import { useToast, Button, Card, Loading } from "@/components/ui-custom";
 import Navbar from "@/components/navbar";
 import { formatZoned, isJogoBloqueado, isAcontecendoAgora, isProximas24h } from "@/lib/tempo";
 import { calcularPontosPalpite, obterLabelPontuacao } from "@/lib/pontuacao";
-import { Calendar, Save, Share2, Sparkles, Trophy, BarChart3, TrendingUp, HelpCircle } from "lucide-react";
+import { Calendar, Save, Share2, Sparkles, Trophy, BarChart3, TrendingUp, HelpCircle, Lock } from "lucide-react";
 import confetti from "canvas-confetti";
 
 interface Jogo {
@@ -48,6 +48,7 @@ export default function BolaoPage() {
   // Estados de formulário local para palpites em digitação
   const [palpitesInputs, setPalpitesInputs] = useState<Record<string, { casa: string; visitante: string }>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [codigoPresenca, setCodigoPresenca] = useState("");
 
   // Forçar reavaliação de horários a cada 30 segundos
   const [tick, setTick] = useState(0);
@@ -60,6 +61,10 @@ export default function BolaoPage() {
       return;
     }
     setParticipantId(id);
+    
+    // Carrega PIN de presença local se houver
+    const savedPin = localStorage.getItem("pin_presenca") || "";
+    setCodigoPresenca(savedPin);
     
     // Obter nome do participante
     supabase
@@ -141,33 +146,78 @@ export default function BolaoPage() {
       return;
     }
 
+    if (!codigoPresenca || codigoPresenca.trim() === "") {
+      showToast("Digite o Código PIN de Presença do bar para salvar seu palpite!", "warning");
+      return;
+    }
+
     setSavingId(jogoId);
 
     try {
-      // Upsert palpite (se já existir, atualiza; senão, insere)
-      const { data, error } = await supabase
-        .from("palpites")
-        .upsert(
-          {
-            participante_id: participantId,
-            jogo_id: jogoId,
-            palpite_casa: golsCasa,
-            palpite_visitante: golsVisitante,
-            atualizado_em: new Date().toISOString(),
-          },
-          { onConflict: "participante_id,jogo_id" }
-        )
-        .select()
-        .single();
+      // Tenta chamar a RPC segura com código de presença
+      const { data, error } = await supabase.rpc("salvar_palpite_com_codigo", {
+        p_participante_id: participantId,
+        p_jogo_id: jogoId,
+        p_palpite_casa: golsCasa,
+        p_palpite_visitante: golsVisitante,
+        p_codigo_presenca: codigoPresenca.trim()
+      });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback: se a RPC não existe ainda no banco do cliente, faz o upsert clássico original
+        if (error.message.includes("does not exist")) {
+          const { data: upsertData, error: upsertError } = await supabase
+            .from("palpites")
+            .upsert(
+              {
+                participante_id: participantId,
+                jogo_id: jogoId,
+                palpite_casa: golsCasa,
+                palpite_visitante: golsVisitante,
+                atualizado_em: new Date().toISOString(),
+              },
+              { onConflict: "participante_id,jogo_id" }
+            )
+            .select()
+            .single();
 
-      if (data) {
-        // Atualizar estado local
-        setPalpites((prev) => ({ ...prev, [jogoId]: data }));
+          if (upsertError) throw upsertError;
+
+          if (upsertData) {
+            setPalpites((prev) => ({ ...prev, [jogoId]: upsertData }));
+            showToast("Palpite registrado com sucesso! Boa sorte! 🍀", "success");
+            confetti({
+              particleCount: 80,
+              spread: 50,
+              origin: { y: 0.8 },
+              colors: ["#D4AF37", "#B91C1C", "#FFFFFF"],
+            });
+          }
+          return;
+        }
+        throw error;
+      }
+
+      // Processa retorno JSON da RPC
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+
+      if (result && !result.success) {
+        showToast(result.error || "Código de presença inválido!", "error");
+        return;
+      }
+
+      if (result && result.success) {
+        const mockPalpite = {
+          id: result.palpite_id || Math.random().toString(),
+          jogo_id: jogoId,
+          palpite_casa: golsCasa,
+          palpite_visitante: golsVisitante,
+          pontos_ganhos: 0
+        };
+
+        setPalpites((prev) => ({ ...prev, [jogoId]: mockPalpite }));
         showToast("Palpite registrado com sucesso! Boa sorte! 🍀", "success");
         
-        // Efeito comemorativo de confete
         confetti({
           particleCount: 80,
           spread: 50,
