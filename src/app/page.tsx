@@ -121,7 +121,23 @@ function LandingPageContent() {
 
       if (error) {
         if (error.code === "23505") {
-          throw new Error("Este endereço de e-mail já está cadastrado no bolão!");
+          // O e-mail já existe no banco. Em vez de bloquear, fazemos login automático recuperando o cadastro
+          const { data: existingPart, error: fetchError } = await supabase
+            .from("participantes")
+            .select("*")
+            .eq("email", formData.email)
+            .single();
+
+          if (fetchError || !existingPart) {
+            throw new Error("Este endereço de e-mail já está cadastrado no bolão!");
+          }
+
+          // Salva o ID recuperado no LocalStorage
+          localStorage.setItem("participante_id", existingPart.id);
+          
+          showToast("Bem-vindo de volta! Identificamos o seu cadastro.", "success");
+          router.push("/bolao");
+          return;
         }
         throw error;
       }
